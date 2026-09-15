@@ -64,6 +64,34 @@
 | 6 | Categorías | Sí, en v1, por materia/proyecto — se agrega como criterio de "terminado" (punto 8) |
 | — | Offline (detectado como riesgo de scope, no como hueco) | Explícito en README desde v1: "PWA instalable para experiencia de app nativa; requiere conexión, sin soporte offline en v1" |
 
+### Segunda pasada de revisión (antes de Fase 3)
+
+| # | Punto | Resolución |
+|---|---|---|
+| 1 | Cuándo se detecta que la racha se rompió | Se recalcula cada vez que se abre la app (compara fecha del último registro completado vs. "ayer"), no solo al marcar completado |
+| 2 | Definición de "semana" para el % semanal | Semana calendario, lunes a domingo (no 7 días rodantes) |
+| 3 | Campo "track" en categorías | Fuera de v1 — categorías v1 son solo nombre simple; track (full_stack/data_bi/general) y balance por track quedan para v2 |
+
+---
+
+## Fase 3 — Desglose en tickets (30–60 min c/u)
+
+| # | Ticket | ¿Hecho? |
+|---|--------|---------|
+| 1 | Esquema de BD en Supabase: tasks, habits, categories, completions (FKs, archived_at) | [x] |
+| 2 | Supabase Auth + user_id en tablas + políticas RLS + verificación con 2 cuentas | [ ] |
+| 3 | CRUD de categorías (solo nombre, sin track, sin hardcodear) | [ ] |
+| 4 | CRUD de tareas/hábitos (tipo, categoría, due_date solo en tareas) | [ ] |
+| 5 | Vista "hoy" unificada (marcar completado, fecha local en completions) | [ ] |
+| 6 | RPC de racha (compara último registro vs. "ayer", recalcula en cada consulta) | [ ] |
+| 7 | RPC de % diario y % semanal (tareas+hábitos combinados, semana lun-dom) | [ ] |
+| 8 | Pantalla principal: conecta las 3 RPC + al menos una gráfica Chart.js | [ ] |
+| 9 | Vista de calendario/historial | [ ] |
+| 10 | PWA instalable (manifest + service worker) + deploy en URL real | [ ] |
+| 11 | README con decisiones técnicas | [ ] |
+| 12 | Auditoría de código (prompt de Fase 5, enfoque en RLS y RPC) | [ ] |
+| 13 | Pulir diseño/CSS/UX en las 5 pantallas (responsive incluido) | [ ] |
+
 ---
 
 ## Regla de oro
