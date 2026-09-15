@@ -74,29 +74,26 @@ pulso/
 
 ```mermaid
 flowchart LR
-    A["🔐 1. Login / Registro<br/><i>(Autenticación Supabase)</i>"] -->|"Credenciales válidas"| B["📊 2. Pantalla Principal: Vista 'Hoy'"]
+    A["🔐 1. Login y Registro - Autenticación Supabase"] -->|"Credenciales válidas"| B["📊 2. Pantalla Principal: Vista Hoy"]
 
-    subgraph Dashboard ["Vista 'Hoy' (Dashboard Unificado)"]
-        direction TB
-        B1["📈 KPI 1: % Cumplimiento Diario"]
-        B2["🔥 KPI 2: Rachas por Hábito (Streaks)"]
-        B3["📊 KPI 3: % Cumplimiento Semanal"]
-        B4["✅ Lista Unificada (Tareas + Hábitos del día)"]
+    subgraph Dashboard ["Vista Hoy - Dashboard Unificado"]
+        B1["📈 KPI 1: Porcentaje Cumplimiento Diario"]
+        B2["🔥 KPI 2: Rachas por Hábito - Streaks"]
+        B3["📊 KPI 3: Porcentaje Cumplimiento Semanal"]
+        B4["✅ Lista Unificada: Tareas y Hábitos"]
     end
 
-    B -->|"Navegación / Acciones"| C["📝 3 & 4. Gestión (Lista y Formulario)"]
+    B -->|"Acciones y Gestión"| C["📝 3 y 4. Gestión: Lista y Formulario"]
     
     subgraph Management ["Gestión de Registros"]
-        direction TB
         C1["Formulario: Tarea vs Hábito"]
-        C2["Asignación de Categoría / Materia"]
-        C3["Acciones: Crear, Editar, Soft-delete / Eliminar"]
+        C2["Asignación de Categoría o Materia"]
+        C3["Acciones: Crear, Editar, Soft-delete o Eliminar"]
     end
 
-    B -->|"Consultar Fechas"| D["📅 5. Historial / Calendario"]
+    B -->|"Consultar Fechas"| D["📅 5. Historial y Calendario"]
     
     subgraph History ["Historial de Cumplimiento"]
-        direction TB
         D1["Vista de fechas pasadas"]
         D2["Registro histórico diario"]
     end
@@ -108,56 +105,49 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    subgraph Client ["📱 Cliente (Browser / PWA)"]
-        PWA ["Service Worker & Manifest<br/><i>(App Instalable)</i>"]
-        
-        subgraph UI ["Capa de Interfaz (Vanilla JS)"]
-            Router ["Enrutador SPA (app.js)"]
-            Views ["Vistas (Hoy, Gestión, Historial, Auth)"]
-            Charts ["Chart.js (Gráficas de métricas)"]
-        end
-        
-        subgraph Services ["Capa de Servicios"]
-            AuthSvc ["auth.js (Autenticación)"]
-            DataSvc ["tasks.js / habits.js / categories.js"]
-            MetricSvc ["metrics.js (Indicadores)"]
-        end
+    subgraph Client ["📱 Cliente - Browser y PWA"]
+        PWA ["Service Worker y Manifest PWA"]
+        Router ["Enrutador SPA - app.js"]
+        Views ["Vistas: Hoy, Gestión, Historial, Auth"]
+        Charts ["Chart.js - Gráficas de métricas"]
+        AuthSvc ["auth.js - Servicio Autenticación"]
+        DataSvc ["tasks.js, habits.js, categories.js"]
+        MetricSvc ["metrics.js - Indicadores"]
     end
 
-    subgraph Supabase ["⚡ Supabase BaaS (Backend)"]
-        Auth ["Supabase Auth<br/><i>(JWT & Sesiones)</i>"]
+    subgraph Supabase ["⚡ Supabase BaaS - Backend"]
+        Auth ["Supabase Auth - JWT y Sesiones"]
+        RLS ["Row Level Security - RLS por user_id"]
         
         subgraph Database ["PostgreSQL Database"]
-            RLS ["Row Level Security (RLS)<br/><i>(Aislamiento por user_id)</i>"]
-            
-            subgraph Tables ["Tablas de Datos"]
-                T_Prof ["profiles"]
-                T_Cat ["categories"]
-                T_Task ["tasks"]
-                T_Habit ["habits"]
-                T_Comp ["habit_completions"]
-            end
-            
-            subgraph Logic ["Cálculo de Métricas (SQL)"]
-                V_Daily ["Vistas: Cumplimiento Diario & Semanal"]
-                RPC_Streak ["RPC: Cálculo de Rachas"]
-            end
+            T_Prof ["Tabla: profiles"]
+            T_Cat ["Tabla: categories"]
+            T_Task ["Tabla: tasks"]
+            T_Habit ["Tabla: habits"]
+            T_Comp ["Tabla: habit_completions"]
+            V_Daily ["Vistas SQL: Cumplimiento Diario y Semanal"]
+            RPC_Streak ["RPC SQL: Cálculo de Rachas"]
         end
     end
 
-    %% Relaciones
-    PWA -.-> UI
+    PWA --> Router
     Router --> Views
     Views --> Charts
-    Views --> Services
+    Views --> AuthSvc
+    Views --> DataSvc
+    Views --> MetricSvc
 
     AuthSvc -->|"Autenticación JWT"| Auth
     DataSvc -->|"HTTPS CRUD"| RLS
-    MetricSvc -->|"Vistas & RPC SQL"| RLS
+    MetricSvc -->|"Consultas SQL"| RLS
 
-    RLS --> Tables
-    RLS --> Logic
-    Logic --> Tables
+    RLS --> T_Prof
+    RLS --> T_Cat
+    RLS --> T_Task
+    RLS --> T_Habit
+    RLS --> T_Comp
+    RLS --> V_Daily
+    RLS --> RPC_Streak
 ```
 
 ---
