@@ -104,50 +104,29 @@ flowchart LR
 ## 🏗️ Arquitectura del Sistema
 
 ```mermaid
-flowchart TD
-    subgraph Client ["📱 Cliente - Browser y PWA"]
-        PWA ["Service Worker y Manifest PWA"]
-        Router ["Enrutador SPA - app.js"]
-        Views ["Vistas: Hoy, Gestión, Historial, Auth"]
-        Charts ["Chart.js - Gráficas de métricas"]
-        AuthSvc ["auth.js - Servicio Autenticación"]
-        DataSvc ["tasks.js, habits.js, categories.js"]
-        MetricSvc ["metrics.js - Indicadores"]
+flowchart LR
+    A["📱 Frontend - Browser y PWA"] -->|"Autenticación JWT"| B["⚡ Supabase Auth - Sesiones"]
+    A -->|"HTTPS Queries"| C["🔒 Supabase RLS - Aislamiento por user_id"]
+
+    subgraph Frontend ["Cliente - Capa Frontend"]
+        A1["Service Worker y Manifest PWA"]
+        A2["Enrutador SPA - app.js"]
+        A3["Vistas: Hoy, Gestión, Historial, Auth"]
+        A4["Chart.js - Gráficas de rendimiento"]
+        A5["Servicios ES6: tasks, habits, metrics"]
     end
 
-    subgraph Supabase ["⚡ Supabase BaaS - Backend"]
-        Auth ["Supabase Auth - JWT y Sesiones"]
-        RLS ["Row Level Security - RLS por user_id"]
-        
-        subgraph Database ["PostgreSQL Database"]
-            T_Prof ["Tabla: profiles"]
-            T_Cat ["Tabla: categories"]
-            T_Task ["Tabla: tasks"]
-            T_Habit ["Tabla: habits"]
-            T_Comp ["Tabla: habit_completions"]
-            V_Daily ["Vistas SQL: Cumplimiento Diario y Semanal"]
-            RPC_Streak ["RPC SQL: Cálculo de Rachas"]
-        end
+    subgraph Backend ["Backend - PostgreSQL Database"]
+        C1["Tablas: profiles, categories, tasks, habits"]
+        C2["Tabla: habit_completions - Registros diarios"]
+        C3["Vistas SQL: Cumplimiento Diario y Semanal"]
+        C4["Funciones RPC SQL: Cálculo de Rachas"]
     end
 
-    PWA --> Router
-    Router --> Views
-    Views --> Charts
-    Views --> AuthSvc
-    Views --> DataSvc
-    Views --> MetricSvc
-
-    AuthSvc -->|"Autenticación JWT"| Auth
-    DataSvc -->|"HTTPS CRUD"| RLS
-    MetricSvc -->|"Consultas SQL"| RLS
-
-    RLS --> T_Prof
-    RLS --> T_Cat
-    RLS --> T_Task
-    RLS --> T_Habit
-    RLS --> T_Comp
-    RLS --> V_Daily
-    RLS --> RPC_Streak
+    C --> C1
+    C --> C2
+    C --> C3
+    C --> C4
 ```
 
 ---
