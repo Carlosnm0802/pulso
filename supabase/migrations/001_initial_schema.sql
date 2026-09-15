@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS public.categories (
 -- 2. TABLA: habits
 -- Hábitos diarios asignados a un usuario y opcionalmente a una categoría.
 -- Utiliza soft-delete (archived_at) para no romper el historial de rachas.
--- ----------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.habits (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -83,4 +83,3 @@ CREATE INDEX IF NOT EXISTS idx_tasks_is_completed ON public.tasks(is_completed);
 
 CREATE INDEX IF NOT EXISTS idx_habit_completions_user_id ON public.habit_completions(user_id);
 CREATE INDEX IF NOT EXISTS idx_habit_completions_habit_date ON public.habit_completions(habit_id, completed_date);
-g
