@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prueba CRUD Categorías — Pulso</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; background: #0f172a; color: #f8fafc; }
+    h1 { font-size: 1.5rem; color: #818cf8; }
+    .card { background: #1e293b; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1rem; border: 1px solid #334155; }
+    input, button { padding: 0.5rem 0.75rem; margin: 0.25rem 0; border-radius: 0.25rem; border: 1px solid #475569; background: #0f172a; color: #fff; }
+    button { background: #4f46e5; border: none; cursor: pointer; font-weight: 600; }
+    button:hover { background: #6366f1; }
+    ul { list-style: none; padding: 0; }
+    li { background: #334155; padding: 0.75rem; border-radius: 0.25rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
+    .badge { padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+
+  <h1>⚡ Pulso — Prueba CRUD Categorías</h1>
+
+  <div class="card">
+    <h3>Crear Categoría</h3>
+    <input type="text" id="cat-name" placeholder="Nombre (ej. Matemáticas)" />
+    <input type="color" id="cat-color" value="#6366f1" />
+    <button id="btn-create">Crear Categoría</button>
+  </div>
+
+  <div class="card">
+    <h3>Categorías Activas</h3>
+    <button id="btn-refresh">Cargar Categorías</button>
+    <ul id="cat-list"></ul>
+  </div>
+
+  <script type="module">
+    import { getCategories, createCategory, updateCategory, archiveCategory } from './js/services/categories.js';
+
+    const catName = document.getElementById('cat-name');
+    const catColor = document.getElementById('cat-color');
+    const btnCreate = document.getElementById('btn-create');
+    const btnRefresh = document.getElementById('btn-refresh');
+    const catList = document.getElementById('cat-list');
+
+    async function loadCategories() {
+      catList.innerHTML = '<li>Cargando...</li>';
+      try {
+        const categories = await getCategories();
+        if (!categories || categories.length === 0) {
+          catList.innerHTML = '<li>No hay categorías activas.</li>';
+          return;
+        }
+
+        catList.innerHTML = categories.map(c => `
+          <li>
+            <span>
+              <span class="badge" style="background:${c.color}">${c.name}</span>
+            </span>
+            <div>
+              <button onclick="editCat('${c.id}', '${c.name}', '${c.color}')">Editar</button>
+              <button style="background:#ef4444" onclick="archiveCat('${c.id}')">Archivar</button>
+            </div>
+          </li>
+        `).join('');
+      } catch (err) {
+        catList.innerHTML = `<li style="color:#ef4444">Error: ${err.message}</li>`;
+      }
+    }
+
+    btnCreate.addEventListener('click', async () => {
+      try {
+        await createCategory({ name: catName.value, color: catColor.value });
+        catName.value = '';
+        await loadCategories();
+      } catch (err) {
+        alert('Error al crear categoría: ' + err.message);
+      }
+    });
+
+    btnRefresh.addEventListener('click', loadCategories);
+
+    window.editCat = async (id, name, color) => {
+      const newName = prompt('Nuevo nombre:', name);
+      if (newName) {
+        try {
+          await updateCategory(id, { name: newName, color });
+          await loadCategories();
+        } catch (err) {
+          alert('Error al editar: ' + err.message);
+        }
+      }
+    };
+
+    window.archiveCat = async (id) => {
+      if (confirm('¿Archivar esta categoría?')) {
+        try {
+          await archiveCategory(id);
+          await loadCategories();
+        } catch (err) {
+          alert('Error al archivar: ' + err.message);
+        }
+      }
+    };
+
+    // Cargar al inicio
+    loadCategories();
+  </script>
+
+</body>
+</html>
