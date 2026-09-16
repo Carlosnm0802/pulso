@@ -8,33 +8,52 @@
     body { font-family: system-ui, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; background: #0f172a; color: #f8fafc; }
     h1 { font-size: 1.5rem; color: #818cf8; }
     .card { background: #1e293b; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1rem; border: 1px solid #334155; }
-    input, button { padding: 0.5rem 0.75rem; margin: 0.25rem 0; border-radius: 0.25rem; border: 1px solid #475569; background: #0f172a; color: #fff; }
-    button { background: #4f46e5; border: none; cursor: pointer; font-weight: 600; }
+    input, button { padding: 0.5rem 0.75rem; margin: 0.25rem 0; border-radius: 0.25rem; border: 1px solid #475569; background: #0f172a; color: #fff; width: calc(100% - 1.5rem); box-sizing: border-box; }
+    button { background: #4f46e5; border: none; cursor: pointer; font-weight: 600; margin-top: 0.5rem; width: 100%; }
     button:hover { background: #6366f1; }
     ul { list-style: none; padding: 0; }
     li { background: #334155; padding: 0.75rem; border-radius: 0.25rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
     .badge { padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-size: 0.8rem; }
+    .status { font-weight: bold; padding: 0.5rem; border-radius: 0.25rem; background: #334155; margin-bottom: 1rem; }
   </style>
 </head>
 <body>
 
-  <h1>⚡ Pulso — Prueba CRUD Categorías</h1>
+  <h1>⚡ Pulso — Prueba Auth + CRUD Categorías</h1>
 
+  <div id="user-status" class="status">Estado: No autenticado</div>
+
+  <!-- SECCIÓN DE AUTENTICACIÓN -->
+  <div class="card" id="auth-card">
+    <h3>1. Autenticarse para probar RLS</h3>
+    <input type="email" id="auth-email" placeholder="Correo electrónico" />
+    <input type="password" id="auth-password" placeholder="Contraseña" />
+    <button id="btn-login">Iniciar Sesión</button>
+  </div>
+
+  <!-- SECCIÓN DE CREACIÓN DE CATEGORÍAS -->
   <div class="card">
-    <h3>Crear Categoría</h3>
-    <input type="text" id="cat-name" placeholder="Nombre (ej. Matemáticas)" />
-    <input type="color" id="cat-color" value="#6366f1" />
+    <h3>2. Crear Categoría</h3>
+    <input type="text" id="cat-name" placeholder="Nombre (ej. Desarrollo Web)" />
+    <input type="color" id="cat-color" value="#6366f1" style="height:40px; cursor:pointer;" />
     <button id="btn-create">Crear Categoría</button>
   </div>
 
+  <!-- SECCIÓN DE LISTADO -->
   <div class="card">
-    <h3>Categorías Activas</h3>
+    <h3>3. Categorías Activas del Usuario</h3>
     <button id="btn-refresh">Cargar Categorías</button>
     <ul id="cat-list"></ul>
   </div>
 
   <script type="module">
+    import { supabase } from './js/config.js';
     import { getCategories, createCategory, updateCategory, archiveCategory } from './js/services/categories.js';
+
+    const userStatus = document.getElementById('user-status');
+    const authEmail = document.getElementById('auth-email');
+    const authPassword = document.getElementById('auth-password');
+    const btnLogin = document.getElementById('btn-login');
 
     const catName = document.getElementById('cat-name');
     const catColor = document.getElementById('cat-color');
@@ -42,12 +61,42 @@
     const btnRefresh = document.getElementById('btn-refresh');
     const catList = document.getElementById('cat-list');
 
+    // Verificar sesión actual al cargar
+    async function checkUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        userStatus.innerHTML = `🟢 Sesión Activa: <span style="color:#818cf8">${user.email}</span>`;
+        userStatus.style.background = '#065f46';
+        await loadCategories();
+      } else {
+        userStatus.innerHTML = '🔴 Estado: No autenticado (Inicia sesión para ver categorías por RLS)';
+        userStatus.style.background = '#991b1b';
+        catList.innerHTML = '<li>Debes iniciar sesión para ver tus categorías.</li>';
+      }
+    }
+
+    // Iniciar sesión
+    btnLogin.addEventListener('click', async () => {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: authEmail.value,
+          password: authPassword.value,
+        });
+
+        if (error) throw error;
+        alert('✅ Sesión iniciada con éxito');
+        await checkUser();
+      } catch (err) {
+        alert('Error de inicio de sesión: ' + err.message);
+      }
+    });
+
     async function loadCategories() {
       catList.innerHTML = '<li>Cargando...</li>';
       try {
         const categories = await getCategories();
         if (!categories || categories.length === 0) {
-          catList.innerHTML = '<li>No hay categorías activas.</li>';
+          catList.innerHTML = '<li>No hay categorías activas creadas aún.</li>';
           return;
         }
 
@@ -57,13 +106,13 @@
               <span class="badge" style="background:${c.color}">${c.name}</span>
             </span>
             <div>
-              <button onclick="editCat('${c.id}', '${c.name}', '${c.color}')">Editar</button>
-              <button style="background:#ef4444" onclick="archiveCat('${c.id}')">Archivar</button>
+              <button style="width:auto; margin:0 2px;" onclick="editCat('${c.id}', '${c.name}', '${c.color}')">Editar</button>
+              <button style="width:auto; margin:0 2px; background:#ef4444" onclick="archiveCat('${c.id}')">Archivar</button>
             </div>
           </li>
         `).join('');
       } catch (err) {
-        catList.innerHTML = `<li style="color:#ef4444">Error: ${err.message}</li>`;
+        catList.innerHTML = `<li style="color:#ef4444">Error RLS / Permiso: ${err.message}</li>`;
       }
     }
 
@@ -102,8 +151,8 @@
       }
     };
 
-    // Cargar al inicio
-    loadCategories();
+    // Inicializar al cargar la página
+    checkUser();
   </script>
 
 </body>
