@@ -81,7 +81,7 @@
 | 1 | Esquema de BD en Supabase: tasks, habits, categories, completions (FKs, archived_at) | [x] |
 | 2 | Supabase Auth + user_id en tablas + políticas RLS + verificación con 2 cuentas | [x] |
 | 3 | CRUD de categorías (solo nombre, sin track, sin hardcodear) | [x] |
-| 4 | CRUD de tareas/hábitos (tipo, categoría, due_date solo en tareas) | [ ] |
+| 4 | CRUD de tareas/hábitos (tipo, categoría, due_date solo en tareas) | [x] |
 | 5 | Vista "hoy" unificada (marcar completado, fecha local en completions) | [ ] |
 | 6 | RPC de racha (compara último registro vs. "ayer", recalcula en cada consulta) | [ ] |
 | 7 | RPC de % diario y % semanal (tareas+hábitos combinados, semana lun-dom) | [ ] |

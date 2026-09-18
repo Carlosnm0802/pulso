@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prueba CRUD Tareas y Hábitos — Pulso</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; background: #0f172a; color: #f8fafc; }
+    h1 { font-size: 1.5rem; color: #818cf8; }
+    .card { background: #1e293b; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1rem; border: 1px solid #334155; }
+    input, select, textarea, button { padding: 0.5rem 0.75rem; margin: 0.25rem 0; border-radius: 0.25rem; border: 1px solid #475569; background: #0f172a; color: #fff; width: 100%; box-sizing: border-box; }
+    button { background: #4f46e5; border: none; cursor: pointer; font-weight: 600; margin-top: 0.5rem; }
+    button:hover { background: #6366f1; }
+    ul { list-style: none; padding: 0; }
+    li { background: #334155; padding: 0.75rem; border-radius: 0.25rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
+    .badge { padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-size: 0.8rem; background: #6366f1; }
+    .status { font-weight: bold; padding: 0.5rem; border-radius: 0.25rem; background: #334155; margin-bottom: 1rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  </style>
+</head>
+<body>
+
+  <h1>⚡ Pulso — Prueba CRUD Tareas y Hábitos</h1>
+
+  <div id="user-status" class="status">Estado: No autenticado</div>
+
+  <!-- SECCIÓN AUTH -->
+  <div class="card" id="auth-card">
+    <h3>1. Autenticarse</h3>
+    <input type="email" id="auth-email" placeholder="Correo electrónico" />
+    <input type="password" id="auth-password" placeholder="Contraseña" />
+    <button id="btn-login">Iniciar Sesión</button>
+  </div>
+
+  <div class="grid">
+    <!-- SECCIÓN TAREAS -->
+    <div>
+      <div class="card">
+        <h3>📝 Crear Tarea (Puntual)</h3>
+        <input type="text" id="task-title" placeholder="Título de la tarea" />
+        <textarea id="task-desc" placeholder="Descripción (opcional)"></textarea>
+        <label style="font-size:0.8rem; color:#94a3b8;">Categoría:</label>
+        <select id="task-category"></select>
+        <label style="font-size:0.8rem; color:#94a3b8;">Fecha Límite (due_date):</label>
+        <input type="date" id="task-duedate" />
+        <button id="btn-create-task">Crear Tarea</button>
+      </div>
+
+      <div class="card">
+        <h3>Lista de Tareas</h3>
+        <button id="btn-refresh-tasks">Cargar Tareas</button>
+        <ul id="task-list"></ul>
+      </div>
+    </div>
+
+    <!-- SECCIÓN HÁBITOS -->
+    <div>
+      <div class="card">
+        <h3>🔥 Crear Hábito (Diario)</h3>
+        <input type="text" id="habit-title" placeholder="Título del hábito" />
+        <textarea id="habit-desc" placeholder="Descripción (opcional)"></textarea>
+        <label style="font-size:0.8rem; color:#94a3b8;">Categoría:</label>
+        <select id="habit-category"></select>
+        <button id="btn-create-habit">Crear Hábito</button>
+      </div>
+
+      <div class="card">
+        <h3>Lista de Hábitos Activos</h3>
+        <button id="btn-refresh-habits">Cargar Hábitos</button>
+        <ul id="habit-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { supabase } from './js/config.js';
+    import { getCategories } from './js/services/categories.js';
+    import { getTasks, createTask, updateTask, deleteTask } from './js/services/tasks.js';
+    import { getHabits, createHabit, archiveHabit } from './js/services/habits.js';
+
+    const userStatus = document.getElementById('user-status');
+    const authEmail = document.getElementById('auth-email');
+    const authPassword = document.getElementById('auth-password');
+    const btnLogin = document.getElementById('btn-login');
+
+    const taskTitle = document.getElementById('task-title');
+    const taskDesc = document.getElementById('task-desc');
+    const taskCategory = document.getElementById('task-category');
+    const taskDueDate = document.getElementById('task-duedate');
+    const btnCreateTask = document.getElementById('btn-create-task');
+    const btnRefreshTasks = document.getElementById('btn-refresh-tasks');
+    const taskList = document.getElementById('task-list');
+
+    const habitTitle = document.getElementById('habit-title');
+    const habitDesc = document.getElementById('habit-desc');
+    const habitCategory = document.getElementById('habit-category');
+    const btnCreateHabit = document.getElementById('btn-create-habit');
+    const btnRefreshHabits = document.getElementById('btn-refresh-habits');
+    const habitList = document.getElementById('habit-list');
+
+    async function populateCategories() {
+      try {
+        const categories = await getCategories();
+        const options = '<option value="">-- Sin categoría --</option>' + 
+          categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        taskCategory.innerHTML = options;
+        habitCategory.innerHTML = options;
+      } catch (err) {
+        console.warn('Categorías no cargadas:', err.message);
+      }
+    }
+
+    async function checkUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        userStatus.innerHTML = `🟢 Sesión Activa: <span style="color:#818cf8">${user.email}</span>`;
+        userStatus.style.background = '#065f46';
+        await populateCategories();
+        await loadTasks();
+        await loadHabits();
+      } else {
+        userStatus.innerHTML = '🔴 Estado: No autenticado';
+        userStatus.style.background = '#991b1b';
+      }
+    }
+
+    btnLogin.addEventListener('click', async () => {
+      try {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: authEmail.value,
+          password: authPassword.value,
+        });
+        if (error) throw error;
+        await checkUser();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    });
+
+    // --- TAREAS ---
+    async function loadTasks() {
+      taskList.innerHTML = '<li>Cargando...</li>';
+      try {
+        const tasks = await getTasks();
+        if (!tasks || tasks.length === 0) {
+          taskList.innerHTML = '<li>No hay tareas.</li>';
+          return;
+        }
+
+        taskList.innerHTML = tasks.map(t => `
+          <li>
+            <div>
+              <input type="checkbox" ${t.is_completed ? 'checked' : ''} onchange="toggleTask('${t.id}', this.checked)" style="width:auto;" />
+              <strong style="${t.is_completed ? 'text-decoration:line-through; color:#94a3b8' : ''}">${t.title}</strong>
+              ${t.categories ? `<span class="badge" style="background:${t.categories.color}">${t.categories.name}</span>` : ''}
+              ${t.due_date ? `<div style="font-size:0.75rem; color:#cbd5e1;">Fecha: ${t.due_date}</div>` : ''}
+            </div>
+            <button style="background:#ef4444; width:auto; margin:0;" onclick="removeTask('${t.id}')">Eliminar</button>
+          </li>
+        `).join('');
+      } catch (err) {
+        taskList.innerHTML = `<li style="color:#ef4444">Error: ${err.message}</li>`;
+      }
+    }
+
+    btnCreateTask.addEventListener('click', async () => {
+      try {
+        await createTask({
+          title: taskTitle.value,
+          description: taskDesc.value,
+          category_id: taskCategory.value || null,
+          due_date: taskDueDate.value || null
+        });
+        taskTitle.value = '';
+        taskDesc.value = '';
+        await loadTasks();
+      } catch (err) {
+        alert('Error al crear tarea: ' + err.message);
+      }
+    });
+
+    btnRefreshTasks.addEventListener('click', loadTasks);
+
+    window.toggleTask = async (id, isCompleted) => {
+      try {
+        await updateTask(id, { is_completed: isCompleted });
+        await loadTasks();
+      } catch (err) {
+        alert('Error al actualizar estado: ' + err.message);
+      }
+    };
+
+    window.removeTask = async (id) => {
+      if (confirm('¿Eliminar esta tarea permanentemente?')) {
+        try {
+          await deleteTask(id);
+          await loadTasks();
+        } catch (err) {
+          alert('Error al eliminar tarea: ' + err.message);
+        }
+      }
+    };
+
+    // --- HÁBITOS ---
+    async function loadHabits() {
+      habitList.innerHTML = '<li>Cargando...</li>';
+      try {
+        const habits = await getHabits();
+        if (!habits || habits.length === 0) {
+          habitList.innerHTML = '<li>No hay hábitos activos.</li>';
+          return;
+        }
+
+        habitList.innerHTML = habits.map(h => `
+          <li>
+            <div>
+              <strong>${h.title}</strong>
+              ${h.categories ? `<span class="badge" style="background:${h.categories.color}">${h.categories.name}</span>` : ''}
+            </div>
+            <button style="background:#f59e0b; width:auto; margin:0;" onclick="removeHabit('${h.id}')">Archivar</button>
+          </li>
+        `).join('');
+      } catch (err) {
+        habitList.innerHTML = `<li style="color:#ef4444">Error: ${err.message}</li>`;
+      }
+    }
+
+    btnCreateHabit.addEventListener('click', async () => {
+      try {
+        await createHabit({
+          title: habitTitle.value,
+          description: habitDesc.value,
+          category_id: habitCategory.value || null
+        });
+        habitTitle.value = '';
+        habitDesc.value = '';
+        await loadHabits();
+      } catch (err) {
+        alert('Error al crear hábito: ' + err.message);
+      }
+    });
+
+    btnRefreshHabits.addEventListener('click', loadHabits);
+
+    window.removeHabit = async (id) => {
+      if (confirm('¿Archivar este hábito? (Soft-delete)')) {
+        try {
+          await archiveHabit(id);
+          await loadHabits();
+        } catch (err) {
+          alert('Error al archivar hábito: ' + err.message);
+        }
+      }
+    };
+
+    checkUser();
+  </script>
+
+</body>
+</html>
