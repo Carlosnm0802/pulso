@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prueba Vista "Hoy" Unificada — Pulso</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 650px; margin: 2rem auto; padding: 0 1rem; background: #0f172a; color: #f8fafc; }
+    h1 { font-size: 1.5rem; color: #818cf8; margin-bottom: 0.25rem; }
+    .date-banner { color: #94a3b8; font-size: 0.95rem; margin-bottom: 1.5rem; text-transform: capitalize; }
+    .card { background: #1e293b; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1rem; border: 1px solid #334155; }
+    input, button { padding: 0.5rem 0.75rem; margin: 0.25rem 0; border-radius: 0.25rem; border: 1px solid #475569; background: #0f172a; color: #fff; width: 100%; box-sizing: border-box; }
+    button { background: #4f46e5; border: none; cursor: pointer; font-weight: 600; margin-top: 0.5rem; }
+    button:hover { background: #6366f1; }
+    .status { font-weight: bold; padding: 0.5rem; border-radius: 0.25rem; background: #334155; margin-bottom: 1rem; }
+    
+    /* Barra de progreso */
+    .progress-container { background: #334155; border-radius: 0.5rem; height: 1.25rem; overflow: hidden; margin: 1rem 0; }
+    .progress-bar { background: linear-gradient(90deg, #6366f1, #10b981); height: 100%; width: 0%; transition: width 0.3s ease; }
+
+    /* Lista unificada */
+    ul { list-style: none; padding: 0; }
+    li { background: #1e293b; padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.75rem; border: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; }
+    li.completed { opacity: 0.6; }
+    li.completed span.title { text-decoration: line-through; color: #94a3b8; }
+    
+    .type-tag { font-size: 0.7rem; font-weight: bold; text-transform: uppercase; padding: 0.15rem 0.4rem; border-radius: 0.2rem; margin-right: 0.5rem; }
+    .type-habit { background: #f59e0b; color: #000; }
+    .type-task { background: #3b82f6; color: #fff; }
+    .category-badge { padding: 0.15rem 0.4rem; border-radius: 0.2rem; font-size: 0.75rem; color: #fff; }
+  </style>
+</head>
+<body>
+
+  <h1>⚡ Pulso — Dashboard Vista "Hoy"</h1>
+  <div class="date-banner" id="current-date-banner">Cargando fecha...</div>
+
+  <div id="user-status" class="status">Estado: No autenticado</div>
+
+  <!-- SECCIÓN AUTH -->
+  <div class="card" id="auth-card">
+    <h3>Autenticarse para ver Dashboard</h3>
+    <input type="email" id="auth-email" placeholder="Correo electrónico" />
+    <input type="password" id="auth-password" placeholder="Contraseña" />
+    <button id="btn-login">Iniciar Sesión</button>
+  </div>
+
+  <!-- SECCIÓN METRICAS DIARIAS DE PRUEBA -->
+  <div class="card" id="today-card" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="margin:0;">Avance del Día</h3>
+      <span id="progress-text" style="font-size:1.25rem; font-weight:bold; color:#10b981;">0%</span>
+    </div>
+    
+    <div class="progress-container">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <button id="btn-refresh" style="background:#334155;">🔄 Recargar Vista Hoy</button>
+
+    <h4 style="margin-top:1.5rem; margin-bottom:0.5rem;">Lista Unificada (Hábitos + Tareas)</h4>
+    <ul id="unified-list"></ul>
+  </div>
+
+  <script type="module">
+    import { supabase } from './js/config.js';
+    import { getTodayLocalDateString, formatFriendlyDate } from './js/utils/date.js';
+    import { getTodayUnifiedData, toggleTodayItemCompletion } from './js/pages/today.js';
+
+    const currentDateBanner = document.getElementById('current-date-banner');
+    const userStatus = document.getElementById('user-status');
+    const authCard = document.getElementById('auth-card');
+    const authEmail = document.getElementById('auth-email');
+    const authPassword = document.getElementById('auth-password');
+    const btnLogin = document.getElementById('btn-login');
+
+    const todayCard = document.getElementById('today-card');
+    const progressText = document.getElementById('progress-text');
+    const progressBar = document.getElementById('progress-bar');
+    const btnRefresh = document.getElementById('btn-refresh');
+    const unifiedList = document.getElementById('unified-list');
+
+    const todayDateStr = getTodayLocalDateString();
+    currentDateBanner.innerText = `Hoy es ${formatFriendlyDate(todayDateStr)} (${todayDateStr})`;
+
+    let currentUnifiedItems = [];
+
+    async function checkUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        userStatus.innerHTML = `🟢 Sesión Activa: <span style="color:#818cf8">${user.email}</span>`;
+        userStatus.style.background = '#065f46';
+        authCard.style.display = 'none';
+        todayCard.style.display = 'block';
+        await loadTodayDashboard();
+      } else {
+        userStatus.innerHTML = '🔴 Estado: No autenticado';
+        userStatus.style.background = '#991b1b';
+        authCard.style.display = 'block';
+        todayCard.style.display = 'none';
+      }
+    }
+
+    btnLogin.addEventListener('click', async () => {
+      try {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: authEmail.value,
+          password: authPassword.value,
+        });
+        if (error) throw error;
+        await checkUser();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    });
+
+    async function loadTodayDashboard() {
+      unifiedList.innerHTML = '<li>Cargando vista de Hoy...</li>';
+      try {
+        const data = await getTodayUnifiedData(todayDateStr);
+        currentUnifiedItems = data.items;
+
+        // Actualizar barra de progreso del día
+        progressText.innerText = `${data.stats.percentage}% (${data.stats.completed}/${data.stats.total})`;
+        progressBar.style.width = `${data.stats.percentage}%`;
+
+        if (data.items.length === 0) {
+          unifiedList.innerHTML = '<li>No hay tareas ni hábitos para hoy. ¡Crea algunos en los scripts anteriores!</li>';
+          return;
+        }
+
+        unifiedList.innerHTML = data.items.map((item, index) => `
+          <li class="${item.isCompleted ? 'completed' : ''}">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onchange="onToggleItem(${index}, this.checked)" style="width:20px; height:20px; cursor:pointer;" />
+              <div>
+                <span class="type-tag ${item.itemType === 'habit' ? 'type-habit' : 'type-task'}">${item.itemType === 'habit' ? '🔥 Hábito' : '📝 Tarea'}</span>
+                <span class="title">${item.title}</span>
+                ${item.category ? `<span class="category-badge" style="background:${item.category.color}">${item.category.name}</span>` : ''}
+              </div>
+            </div>
+          </li>
+        `).join('');
+
+      } catch (err) {
+        unifiedList.innerHTML = `<li style="color:#ef4444">Error al cargar Vista Hoy: ${err.message}</li>`;
+      }
+    }
+
+    window.onToggleItem = async (index, newCheckedState) => {
+      const item = currentUnifiedItems[index];
+      if (!item) return;
+
+      try {
+        await toggleTodayItemCompletion(item, newCheckedState, todayDateStr);
+        await loadTodayDashboard(); // Recargar tras alternar estado
+      } catch (err) {
+        alert('Error al actualizar estado: ' + err.message);
+        await loadTodayDashboard();
+      }
+    };
+
+    btnRefresh.addEventListener('click', loadTodayDashboard);
+
+    checkUser();
+  </script>
+
+</body>
+</html>
