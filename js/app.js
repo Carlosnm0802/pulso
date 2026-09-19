@@ -8,10 +8,12 @@ import { getDashboardMetrics, getUserHabitsWithStreaks } from './services/metric
 import { getTodayUnifiedData, toggleTodayItemCompletion } from './pages/today.js';
 import { renderPerformanceChart } from './components/chart.js';
 import { openCreationModal } from './components/modals.js';
+import { renderManagementView } from './pages/manage.js';
+import { getHistoryDataForDate } from './pages/history.js';
 
 // Elementos del DOM
 const authSection = document.getElementById('auth-section');
-const dashboardSection = document.getElementById('dashboard-section');
+const appMainContent = document.getElementById('app-main-content');
 const authHeaderContainer = document.getElementById('auth-header-container');
 const btnOpenCreateModal = document.getElementById('btn-open-create-modal');
 
@@ -28,8 +30,19 @@ const todayFriendlyDate = document.getElementById('today-friendly-date');
 const todayUnifiedList = document.getElementById('today-unified-list');
 const btnRefreshDashboard = document.getElementById('btn-refresh-dashboard');
 
+const manageSection = document.getElementById('manage-section');
+const historySection = document.getElementById('history-section');
+const dashboardSection = document.getElementById('dashboard-section');
+
+const historyDatePicker = document.getElementById('history-date-picker');
+const btnFetchHistory = document.getElementById('btn-fetch-history');
+const historyTargetTitle = document.getElementById('history-target-title');
+const historyTargetRate = document.getElementById('history-target-rate');
+const historyUnifiedList = document.getElementById('history-unified-list');
+
 const todayDateStr = getTodayLocalDateString();
 let currentUnifiedItems = [];
+let activeTab = 'dashboard-section';
 
 // ============================================================================
 // INICIALIZACIÓN Y GESTIÓN DE SESIÓN
@@ -37,13 +50,23 @@ let currentUnifiedItems = [];
 
 async function initApp() {
   todayFriendlyDate.innerText = `${formatFriendlyDate(todayDateStr)} (${todayDateStr})`;
+  if (historyDatePicker) historyDatePicker.value = todayDateStr;
+
+  // Setup de Navegación por Pestañas (SPA Router)
+  setupSpaTabRouter();
 
   // Handler para el botón de crear modal
   btnOpenCreateModal?.addEventListener('click', () => {
     openCreationModal('task', async () => {
       await refreshDashboard();
+      if (activeTab === 'manage-section') {
+        await renderManagementView(manageSection, refreshDashboard);
+      }
     });
   });
+
+  // Handler para búsqueda de Historial
+  btnFetchHistory?.addEventListener('click', loadHistoryData);
 
   // Escuchar cambios de autenticación en Supabase
   supabase.auth.onAuthStateChange((event, session) => {
@@ -65,14 +88,14 @@ async function initApp() {
 
 function renderUnauthenticatedState() {
   authSection.style.display = 'block';
-  dashboardSection.style.display = 'none';
+  appMainContent.style.display = 'none';
   btnOpenCreateModal.style.display = 'none';
   authHeaderContainer.innerHTML = '<span style="font-size:0.85rem; color:var(--text-muted);">Sin sesión</span>';
 }
 
 async function renderAuthenticatedState(user) {
   authSection.style.display = 'none';
-  dashboardSection.style.display = 'block';
+  appMainContent.style.display = 'block';
   btnOpenCreateModal.style.display = 'inline-flex';
   authHeaderContainer.innerHTML = `
     <span style="font-size:0.85rem; color:var(--accent-primary); margin-right:0.5rem;">${user.email}</span>
@@ -105,23 +128,54 @@ btnLoginSubmit?.addEventListener('click', async () => {
 });
 
 // ============================================================================
+// ENRUTADOR DE PESTAÑAS (SPA TAB ROUTER)
+// ============================================================================
+
+function setupSpaTabRouter() {
+  const tabs = document.querySelectorAll('.spa-nav-tab');
+  const views = document.querySelectorAll('.spa-view');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', async () => {
+      const targetViewId = tab.getAttribute('data-target');
+      activeTab = targetViewId;
+
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      views.forEach(v => {
+        v.style.display = v.id === targetViewId ? 'block' : 'none';
+      });
+
+      // Cargar contenido específico de la pestaña seleccionada
+      if (targetViewId === 'manage-section') {
+        await renderManagementView(manageSection, refreshDashboard);
+      } else if (targetViewId === 'history-section') {
+        await loadHistoryData();
+      } else if (targetViewId === 'dashboard-section') {
+        await refreshDashboard();
+      }
+    });
+  });
+}
+
+// ============================================================================
 // RENDERIZADO DEL DASHBOARD Y GRÁFICAS (3 RPCs)
 // ============================================================================
 
 async function refreshDashboard() {
   try {
-    // 1. Cargar las 3 RPCs de Supabase en paralelo
     const [metrics, habitsWithStreaks, todayData] = await Promise.all([
       getDashboardMetrics(todayDateStr),
       getUserHabitsWithStreaks(todayDateStr),
       getTodayUnifiedData(todayDateStr)
     ]);
 
-    // 2. Renderizar KPI 1 (% Diario) y KPI 3 (% Semanal)
+    // KPI 1 (% Diario) y KPI 3 (% Semanal)
     kpiDailyRate.innerText = `${metrics.daily_rate}%`;
     kpiWeeklyRate.innerText = `${metrics.weekly_rate}%`;
 
-    // 3. Renderizar KPI 2 (Rachas Activas)
+    // KPI 2 (Rachas Activas)
     const activeStreaksCount = habitsWithStreaks.filter(h => h.streak > 0).length;
     kpiActiveStreaks.innerText = activeStreaksCount;
 
@@ -134,10 +188,10 @@ async function refreshDashboard() {
       kpiStreaksDetail.innerText = 'No hay hábitos activos registrados';
     }
 
-    // 4. Renderizar Gráfica de Chart.js
+    // Renderizar Gráfica Chart.js
     renderPerformanceChart('performanceChart', metrics);
 
-    // 5. Renderizar Lista Unificada "Hoy"
+    // Renderizar Lista Unificada "Hoy"
     currentUnifiedItems = todayData.items;
     renderTodayUnifiedList(todayData.items);
 
@@ -169,7 +223,6 @@ function renderTodayUnifiedList(items) {
     </div>
   `).join('');
 
-  // Event Listeners para los checkboxes
   document.querySelectorAll('.item-checkbox').forEach(cb => {
     cb.addEventListener('change', async (e) => {
       const idx = e.target.getAttribute('data-index');
@@ -185,6 +238,48 @@ function renderTodayUnifiedList(items) {
       }
     });
   });
+}
+
+// ============================================================================
+// CARGA Y RENDERIZADO DE HISTORIAL / CALENDARIO
+// ============================================================================
+
+async function loadHistoryData() {
+  const selectedDate = historyDatePicker.value;
+  if (!selectedDate) return;
+
+  historyUnifiedList.innerHTML = '<li style="color:var(--text-muted);">Consultando historial...</li>';
+
+  try {
+    const historyData = await getHistoryDataForDate(selectedDate);
+    historyTargetTitle.innerText = `Resumen del ${formatFriendlyDate(selectedDate)} (${selectedDate})`;
+    historyTargetRate.innerText = `${historyData.stats.percentage}%`;
+
+    if (historyData.items.length === 0) {
+      historyUnifiedList.innerHTML = '<li style="color:var(--text-muted);">No existen registros guardados para esta fecha.</li>';
+      return;
+    }
+
+    historyUnifiedList.innerHTML = historyData.items.map(item => `
+      <li class="unified-item ${item.isCompleted ? 'completed' : ''}">
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <span style="font-size:1.2rem;">${item.isCompleted ? '✅' : '❌'}</span>
+          <div>
+            <div style="display:flex; align-items:center; gap:0.375rem; margin-bottom:0.15rem;">
+              <span class="type-tag ${item.itemType === 'habit' ? 'type-habit' : 'type-task'}">
+                ${item.itemType === 'habit' ? '🔥 Hábito' : '📝 Tarea'}
+              </span>
+              ${item.category ? `<span class="badge" style="background:${item.category.color}">${item.category.name}</span>` : ''}
+            </div>
+            <span class="item-title" style="font-weight:600; color:var(--text-primary);">${item.title}</span>
+          </div>
+        </div>
+      </li>
+    `).join('');
+
+  } catch (err) {
+    historyUnifiedList.innerHTML = `<li style="color:var(--accent-danger);">Error al consultar historial: ${err.message}</li>`;
+  }
 }
 
 btnRefreshDashboard?.addEventListener('click', refreshDashboard);

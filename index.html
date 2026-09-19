@@ -50,62 +50,105 @@
       <button id="btn-login-submit" class="btn btn-primary" style="width: 100%;">Ingresar a Pulso</button>
     </div>
 
-    <!-- DASHBOARD PRINCIPAL (SI ESTÁ AUTENTICADO) -->
-    <main id="dashboard-section" style="display: none;">
+    <!-- CONTENEDOR PRINCIPAL SPA (SI ESTÁ AUTENTICADO) -->
+    <div id="app-main-content" style="display: none;">
+      
+      <!-- BARRA DE NAVEGACIÓN DE PESTAÑAS (SPA) -->
+      <nav class="spa-nav-tabs" id="spa-nav">
+        <div class="spa-nav-tab active" id="tab-nav-today" data-target="dashboard-section">📊 Hoy</div>
+        <div class="spa-nav-tab" id="tab-nav-manage" data-target="manage-section">📝 Gestión</div>
+        <div class="spa-nav-tab" id="tab-nav-history" data-target="history-section">📅 Historial</div>
+      </nav>
 
-      <!-- SECCIÓN 1: LOS 3 KPIS -->
-      <section class="kpi-grid">
-        <!-- KPI 1: % Diario -->
-        <div class="kpi-card">
-          <div class="kpi-title"> Cumplimiento Hoy</div>
-          <div class="kpi-value" id="kpi-daily-rate">0%</div>
-          <div class="kpi-subtitle">Progreso diario combinado (Tareas + Hábitos)</div>
+      <!-- PESTAÑA 1: DASHBOARD PRINCIPAL ("HOY") -->
+      <main id="dashboard-section" class="spa-view">
+        
+        <!-- SECCIÓN 1: LOS 3 KPIS -->
+        <section class="kpi-grid">
+          <!-- KPI 1: % Diario -->
+          <div class="kpi-card">
+            <div class="kpi-title"> Cumplimiento Hoy</div>
+            <div class="kpi-value" id="kpi-daily-rate">0%</div>
+            <div class="kpi-subtitle">Progreso diario combinado (Tareas + Hábitos)</div>
+          </div>
+
+          <!-- KPI 2: Rachas -->
+          <div class="kpi-card kpi-warning">
+            <div class="kpi-title">🔥 Rachas Activas</div>
+            <div class="kpi-value" id="kpi-active-streaks">0</div>
+            <div class="kpi-subtitle" id="kpi-streaks-detail">Cargando rachas...</div>
+          </div>
+
+          <!-- KPI 3: % Semanal -->
+          <div class="kpi-card kpi-success">
+            <div class="kpi-title">📊 Cumplimiento Semanal</div>
+            <div class="kpi-value" id="kpi-weekly-rate">0%</div>
+            <div class="kpi-subtitle">Semana calendario (Lunes a Domingo)</div>
+          </div>
+        </section>
+
+        <!-- SECCIÓN 2: VISTA "HOY" + GRÁFICA CHART.JS -->
+        <div class="dashboard-sections">
+          
+          <!-- COLUMNA IZQUIERDA: VISTA "HOY" UNIFICADA -->
+          <section class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <div>
+                <h2 style="font-size: 1.25rem;">Vista Hoy</h2>
+                <p style="font-size: 0.8rem; color: var(--text-muted);" id="today-friendly-date">Cargando fecha...</p>
+              </div>
+              <button id="btn-refresh-dashboard" class="btn btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.8rem;">🔄 Refrescar</button>
+            </div>
+
+            <div id="today-unified-list">
+              <p style="color: var(--text-muted);">Cargando tareas y hábitos...</p>
+            </div>
+          </section>
+
+          <!-- COLUMNA DERECHA: GRÁFICA CHART.JS -->
+          <section class="card" style="display: flex; flex-direction: column;">
+            <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">📈 Gráfica de Rendimiento</h2>
+            <div class="chart-container">
+              <canvas id="performanceChart"></canvas>
+            </div>
+          </section>
+
         </div>
 
-        <!-- KPI 2: Rachas -->
-        <div class="kpi-card kpi-warning">
-          <div class="kpi-title">🔥 Rachas Activas</div>
-          <div class="kpi-value" id="kpi-active-streaks">0</div>
-          <div class="kpi-subtitle" id="kpi-streaks-detail">Cargando rachas...</div>
+      </main>
+
+      <!-- PESTAÑA 2: GESTIÓN DE REGISTROS Y CATEGORÍAS -->
+      <section id="manage-section" class="spa-view" style="display: none;">
+        <!-- Se renderiza dinámicamente con js/pages/manage.js -->
+      </section>
+
+      <!-- PESTAÑA 3: VISTA DE HISTORIAL / CALENDARIO -->
+      <section id="history-section" class="spa-view" style="display: none;">
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">📅 Historial de Cumplimiento</h2>
+          <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+            Selecciona cualquier fecha pasada para revisar qué tareas y hábitos completaste ese día.
+          </p>
+          
+          <div style="display:flex; gap:1rem; align-items:center;">
+            <label class="form-label" for="history-date-picker" style="margin:0; font-weight:600;">Consultar Fecha:</label>
+            <input type="date" id="history-date-picker" class="form-control" style="max-width:220px;" />
+            <button id="btn-fetch-history" class="btn btn-primary" style="padding:0.5rem 1rem;">🔍 Buscar</button>
+          </div>
         </div>
 
-        <!-- KPI 3: % Semanal -->
-        <div class="kpi-card kpi-success">
-          <div class="kpi-title">📊 Cumplimiento Semanal</div>
-          <div class="kpi-value" id="kpi-weekly-rate">0%</div>
-          <div class="kpi-subtitle">Semana calendario (Lunes a Domingo)</div>
+        <div class="card" id="history-results-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <h3 id="history-target-title" style="font-size:1.1rem; margin:0;">Resumen del día</h3>
+            <span id="history-target-rate" style="font-size:1.25rem; font-weight:800; color:var(--accent-success);">0%</span>
+          </div>
+          <ul id="history-unified-list" style="list-style:none; padding:0;">
+            <li style="color:var(--text-muted);">Selecciona una fecha arriba para consultar el historial.</li>
+          </ul>
         </div>
       </section>
 
-      <!-- SECCIÓN 2: VISTA "HOY" + GRÁFICA CHART.JS -->
-      <div class="dashboard-sections">
-        
-        <!-- COLUMNA IZQUIERDA: VISTA "HOY" UNIFICADA -->
-        <section class="card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <div>
-              <h2 style="font-size: 1.25rem;">Vista Hoy</h2>
-              <p style="font-size: 0.8rem; color: var(--text-muted);" id="today-friendly-date">Cargando fecha...</p>
-            </div>
-            <button id="btn-refresh-dashboard" class="btn btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.8rem;">🔄 Refrescar</button>
-          </div>
-
-          <div id="today-unified-list">
-            <p style="color: var(--text-muted);">Cargando tareas y hábitos...</p>
-          </div>
-        </section>
-
-        <!-- COLUMNA DERECHA: GRÁFICA CHART.JS -->
-        <section class="card" style="display: flex; flex-direction: column;">
-          <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">📈 Gráfica de Rendimiento</h2>
-          <div class="chart-container">
-            <canvas id="performanceChart"></canvas>
-          </div>
-        </section>
-
-      </div>
-
-    </main>
+    </div>
 
   </div>
 
