@@ -83,7 +83,7 @@
 | 3 | CRUD de categorías (solo nombre, sin track, sin hardcodear) | [x] |
 | 4 | CRUD de tareas/hábitos (tipo, categoría, due_date solo en tareas) | [x] |
 | 5 | Vista "hoy" unificada (marcar completado, fecha local en completions) | [x] |
-| 6 | RPC de racha (compara último registro vs. "ayer", recalcula en cada consulta) | [ ] |
+| 6 | RPC de racha (compara último registro vs. "ayer", recalcula en cada consulta) | [x] |
 | 7 | RPC de % diario y % semanal (tareas+hábitos combinados, semana lun-dom) | [ ] |
 | 8 | Pantalla principal: conecta las 3 RPC + al menos una gráfica Chart.js | [ ] |
 | 9 | Vista de calendario/historial | [ ] |
