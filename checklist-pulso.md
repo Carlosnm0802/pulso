@@ -89,7 +89,7 @@
 | 9 | Vista de calendario/historial | [x] |
 | 10 | PWA instalable (manifest + service worker) + deploy en URL real | [x] |
 | 11 | README con decisiones técnicas | [x] |
-| 12 | Auditoría de código (prompt de Fase 5, enfoque en RLS y RPC) | [ ] |
+| 12 | Auditoría de código (prompt de Fase 5, enfoque en RLS y RPC) | [x] |
 | 13 | Pulir diseño/CSS/UX en las 5 pantallas (responsive incluido) | [ ] |
 
 ---
