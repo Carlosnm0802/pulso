@@ -32,18 +32,26 @@ export async function renderManagementView(containerElement, onDataChangedCallba
         
         <!-- COLUMNA 1: GESTIÓN DE HÁBITOS -->
         <div class="card">
-          <h3 style="font-size:1.1rem; margin-bottom:1rem; color:var(--accent-warning);">🔥 Administración de Hábitos</h3>
+          <div class="manage-section-header">
+            <h3 style="font-size:1.1rem; color:var(--accent-warning);">🔥 Hábitos Activos</h3>
+            <span style="font-size:0.8rem; color:var(--text-muted);">${habits.length} registro${habits.length !== 1 ? 's' : ''}</span>
+          </div>
           <ul id="manage-habits-list" style="list-style:none; padding:0;">
-            ${habits.length === 0 ? '<li style="color:var(--text-muted);">No hay hábitos activos.</li>' : ''}
-            ${habits.map(h => `
-              <li class="unified-item" style="padding:0.75rem;">
-                <div>
-                  <strong style="color:var(--text-primary);">${h.title}</strong>
-                  ${h.categories ? `<span class="badge" style="background:${h.categories.color}">${h.categories.name}</span>` : ''}
+            ${habits.length === 0 ? `
+              <div class="empty-state">
+                <div class="empty-state-icon">🔥</div>
+                <div class="empty-state-title">Sin hábitos activos</div>
+                <div class="empty-state-desc">Crea tu primer hábito diario usando el botón + Crear en la parte superior.</div>
+              </div>
+            ` : habits.map(h => `
+              <li class="unified-item" style="flex-wrap:wrap;">
+                <div style="flex:1; min-width:0;">
+                  <div style="font-weight:600; color:var(--text-primary); margin-bottom:0.2rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${h.title}</div>
+                  ${h.categories ? `<span class="type-tag category-pill">${h.categories.name}</span>` : ''}
                 </div>
-                <div>
-                  <button class="btn btn-secondary" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="window.editHabitPrompt('${h.id}', '${h.title}')">Editar</button>
-                  <button class="btn btn-secondary" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#78350f; color:#fef3c7;" onclick="window.archiveHabitPrompt('${h.id}')">Archivar</button>
+                <div class="item-actions">
+                  <button class="btn btn-secondary" style="padding:0.3rem 0.65rem; font-size:0.78rem;" onclick="window.editHabitPrompt('${h.id}', '${h.title.replace(/'/g, "\\'")}')">✏️ Editar</button>
+                  <button class="btn btn-danger" style="padding:0.3rem 0.65rem; font-size:0.78rem;" onclick="window.archiveHabitPrompt('${h.id}')">📦 Archivar</button>
                 </div>
               </li>
             `).join('')}
@@ -54,18 +62,27 @@ export async function renderManagementView(containerElement, onDataChangedCallba
         <div>
           <!-- TARJETA TAREAS -->
           <div class="card" style="margin-bottom:1.5rem;">
-            <h3 style="font-size:1.1rem; margin-bottom:1rem; color:var(--accent-primary);">📝 Administración de Tareas</h3>
+            <div class="manage-section-header">
+              <h3 style="font-size:1.1rem; color:var(--accent-primary);">📝 Tareas Registradas</h3>
+              <span style="font-size:0.8rem; color:var(--text-muted);">${tasks.length} registro${tasks.length !== 1 ? 's' : ''}</span>
+            </div>
             <ul id="manage-tasks-list" style="list-style:none; padding:0;">
-              ${tasks.length === 0 ? '<li style="color:var(--text-muted);">No hay tareas registradas.</li>' : ''}
-              ${tasks.map(t => `
-                <li class="unified-item" style="padding:0.75rem;">
-                  <div>
-                    <strong style="${t.is_completed ? 'text-decoration:line-through; color:var(--text-muted)' : 'color:var(--text-primary)'}">${t.title}</strong>
-                    ${t.categories ? `<span class="badge" style="background:${t.categories.color}">${t.categories.name}</span>` : ''}
+              ${tasks.length === 0 ? `
+                <div class="empty-state">
+                  <div class="empty-state-icon">📝</div>
+                  <div class="empty-state-title">Sin tareas registradas</div>
+                  <div class="empty-state-desc">Agrega tareas puntuales usando el botón + Crear.</div>
+                </div>
+              ` : tasks.map(t => `
+                <li class="unified-item ${t.is_completed ? 'completed' : ''}" style="flex-wrap:wrap;">
+                  <div style="flex:1; min-width:0;">
+                    <div class="item-title" style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${t.title}</div>
+                    ${t.categories ? `<span class="type-tag category-pill">${t.categories.name}</span>` : ''}
+                    ${t.due_date ? `<span style="font-size:0.75rem; color:var(--text-muted); margin-left:0.25rem;">📅 ${t.due_date}</span>` : ''}
                   </div>
-                  <div>
-                    <button class="btn btn-secondary" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="window.editTaskPrompt('${t.id}', '${t.title}')">Editar</button>
-                    <button class="btn btn-secondary" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#7f1d1d; color:#fecaca;" onclick="window.deleteTaskPrompt('${t.id}')">Eliminar</button>
+                  <div class="item-actions">
+                    <button class="btn btn-secondary" style="padding:0.3rem 0.65rem; font-size:0.78rem;" onclick="window.editTaskPrompt('${t.id}', '${t.title.replace(/'/g, "\\'")}')">✏️ Editar</button>
+                    <button class="btn btn-danger" style="padding:0.3rem 0.65rem; font-size:0.78rem;" onclick="window.deleteTaskPrompt('${t.id}')">🗑️ Eliminar</button>
                   </div>
                 </li>
               `).join('')}
@@ -74,22 +91,33 @@ export async function renderManagementView(containerElement, onDataChangedCallba
 
           <!-- TARJETA CATEGORÍAS -->
           <div class="card">
-            <h3 style="font-size:1.1rem; margin-bottom:1rem; color:var(--accent-success);">🏷️ Categorías (${categories.length})</h3>
+            <div class="manage-section-header">
+              <h3 style="font-size:1.1rem; color:var(--accent-success);">🏷️ Categorías</h3>
+              <span style="font-size:0.8rem; color:var(--text-muted);">${categories.length} registradas</span>
+            </div>
             
-            <form id="form-create-category" style="display:flex; gap:0.5rem; margin-bottom:1rem;">
-              <input type="text" id="manage-cat-name" class="form-control" placeholder="Nueva categoría" required style="flex:1;" />
-              <input type="color" id="manage-cat-color" value="#6366f1" style="width:45px; height:40px; cursor:pointer; padding:0;" />
-              <button type="submit" class="btn btn-primary" style="padding:0.5rem 0.75rem;">+ Crear</button>
+            <form id="form-create-category" style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
+              <input type="text" id="manage-cat-name" class="form-control" placeholder="Nueva categoría..." required style="flex:1; min-width:120px;" />
+              <input type="color" id="manage-cat-color" value="#6366f1" style="width:45px; height:44px; cursor:pointer; padding:0; border:1px solid var(--border-color); border-radius:var(--radius-md); background:transparent;" />
+              <button type="submit" class="btn btn-primary" style="padding:0.5rem 0.875rem;">+ Crear</button>
             </form>
 
             <ul id="manage-categories-list" style="list-style:none; padding:0;">
-              ${categories.length === 0 ? '<li style="color:var(--text-muted);">No hay categorías creadas.</li>' : ''}
-              ${categories.map(c => `
-                <li class="unified-item" style="padding:0.5rem 0.75rem;">
-                  <span class="badge" style="background:${c.color}">${c.name}</span>
-                  <div>
-                    <button class="btn btn-secondary" style="padding:0.2rem 0.4rem; font-size:0.75rem;" onclick="window.editCategoryPrompt('${c.id}', '${c.name}', '${c.color}')">Editar</button>
-                    <button class="btn btn-secondary" style="padding:0.2rem 0.4rem; font-size:0.75rem; background:#7f1d1d; color:#fecaca;" onclick="window.archiveCategoryPrompt('${c.id}')">Archivar</button>
+              ${categories.length === 0 ? `
+                <div class="empty-state">
+                  <div class="empty-state-icon">🏷️</div>
+                  <div class="empty-state-title">Sin categorías</div>
+                  <div class="empty-state-desc">Crea categorías para organizar tus tareas y hábitos.</div>
+                </div>
+              ` : categories.map(c => `
+                <li class="unified-item" style="padding:0.65rem 0.875rem; flex-wrap:wrap; gap:0.5rem;">
+                  <div style="display:flex; align-items:center; gap:0.5rem; flex:1; min-width:0;">
+                    <span style="width:12px; height:12px; border-radius:50%; background:${c.color}; flex-shrink:0; display:inline-block;"></span>
+                    <span style="font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.name}</span>
+                  </div>
+                  <div class="item-actions">
+                    <button class="btn btn-secondary" style="padding:0.25rem 0.55rem; font-size:0.75rem;" onclick="window.editCategoryPrompt('${c.id}', '${c.name.replace(/'/g, "\\'")}', '${c.color}')">✏️</button>
+                    <button class="btn btn-danger" style="padding:0.25rem 0.55rem; font-size:0.75rem;" onclick="window.archiveCategoryPrompt('${c.id}')">🗑️</button>
                   </div>
                 </li>
               `).join('')}
@@ -99,6 +127,7 @@ export async function renderManagementView(containerElement, onDataChangedCallba
 
       </div>
     `;
+
 
     // Adjuntar Handlers Globales de Gestión
     window.editHabitPrompt = async (id, currentTitle) => {

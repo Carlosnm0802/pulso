@@ -34,10 +34,10 @@ export async function openCreationModal(defaultType = 'task', onSuccessCallback)
   // Renderizar contenido del modal
   modalContainerElement.innerHTML = `
     <div class="modal-backdrop" id="modal-backdrop">
-      <div class="modal-card">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title-heading">
         <div class="modal-header">
-          <h2 style="font-size: 1.25rem; font-weight: 700;">✨ Crear Nuevo Registro</h2>
-          <button class="modal-close-btn" id="modal-close-btn">&times;</button>
+          <h2 id="modal-title-heading" style="font-size: 1.25rem; font-weight: 700;">✨ Crear Nuevo Registro</h2>
+          <button class="modal-close-btn" id="modal-close-btn" aria-label="Cerrar modal">&times;</button>
         </div>
 
         <!-- SWITCHER TAREA VS HÁBITO -->
@@ -94,7 +94,14 @@ export async function openCreationModal(defaultType = 'task', onSuccessCallback)
   // Función para cerrar modal
   const closeModal = () => {
     modalContainerElement.innerHTML = '';
+    document.removeEventListener('keydown', escHandler);
   };
+
+  // Cerrar con tecla ESC
+  const escHandler = (e) => {
+    if (e.key === 'Escape') closeModal();
+  };
+  document.addEventListener('keydown', escHandler);
 
   // Alternar entre tipo Tarea y Hábito
   const setType = (type) => {
@@ -134,7 +141,7 @@ export async function openCreationModal(defaultType = 'task', onSuccessCallback)
     if (!title) return;
 
     submitBtn.disabled = true;
-    submitBtn.innerText = 'Guardando...';
+    submitBtn.innerText = '⏳ Guardando...';
 
     try {
       if (activeType === 'task') {
@@ -157,3 +164,4 @@ export async function openCreationModal(defaultType = 'task', onSuccessCallback)
   // Dar foco al input de título automáticamente
   setTimeout(() => titleInput.focus(), 100);
 }
+

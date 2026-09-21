@@ -2,7 +2,7 @@
 // Service Worker — Pulso PWA
 // ============================================================================
 
-const CACHE_NAME = 'pulso-v1';
+const CACHE_NAME = 'pulso-v2';
 
 // Recursos estáticos locales para almacenar en caché
 const STATIC_ASSETS = [
