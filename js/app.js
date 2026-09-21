@@ -52,6 +52,15 @@ async function initApp() {
   todayFriendlyDate.innerText = `${formatFriendlyDate(todayDateStr)} (${todayDateStr})`;
   if (historyDatePicker) historyDatePicker.value = todayDateStr;
 
+  // Registrar Service Worker para soporte PWA
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('[PWA] Service Worker registrado:', reg.scope))
+        .catch(err => console.warn('[PWA] Error al registrar Service Worker:', err));
+    });
+  }
+
   // Setup de Navegación por Pestañas (SPA Router)
   setupSpaTabRouter();
 
