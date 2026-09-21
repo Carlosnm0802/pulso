@@ -169,10 +169,57 @@ function setupSpaTabRouter() {
 }
 
 // ============================================================================
+// SKELETON HELPERS
+// ============================================================================
+
+/** KPI card skeleton (3 tarjetas de carga animadas) */
+function renderKpiSkeletons() {
+  const skeletonCard = () => `
+    <div class="skeleton-kpi-card">
+      <div class="skeleton skeleton-kpi-label"></div>
+      <div class="skeleton skeleton-kpi-value"></div>
+      <div class="skeleton skeleton-kpi-sub"></div>
+    </div>
+  `;
+  // Reemplazar contenido de los KPI con skeletons
+  kpiDailyRate.closest('.kpi-card').innerHTML = `
+    <div class="skeleton skeleton-kpi-label" style="margin-bottom:0.5rem;"></div>
+    <div class="skeleton skeleton-kpi-value" style="margin-bottom:0.5rem;"></div>
+    <div class="skeleton skeleton-kpi-sub"></div>
+  `;
+  kpiActiveStreaks.closest('.kpi-card').innerHTML = `
+    <div class="skeleton skeleton-kpi-label" style="margin-bottom:0.5rem;"></div>
+    <div class="skeleton skeleton-kpi-value" style="margin-bottom:0.5rem;"></div>
+    <div class="skeleton skeleton-kpi-sub"></div>
+  `;
+  kpiWeeklyRate.closest('.kpi-card').innerHTML = `
+    <div class="skeleton skeleton-kpi-label" style="margin-bottom:0.5rem;"></div>
+    <div class="skeleton skeleton-kpi-value" style="margin-bottom:0.5rem;"></div>
+    <div class="skeleton skeleton-kpi-sub"></div>
+  `;
+}
+
+/** Lista skeleton (N ítems con shimmer) */
+function skeletonItems(count = 3) {
+  return Array.from({ length: count }, () => `
+    <div class="skeleton-item">
+      <div class="skeleton skeleton-circle"></div>
+      <div class="skeleton-lines">
+        <div class="skeleton skeleton-line-sm"></div>
+        <div class="skeleton skeleton-line-md"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================================
 // RENDERIZADO DEL DASHBOARD Y GRÁFICAS (3 RPCs)
 // ============================================================================
 
 async function refreshDashboard() {
+  // Mostrar skeleton inmediatamente en la lista Hoy
+  todayUnifiedList.innerHTML = skeletonItems(4);
+
   try {
     const [metrics, habitsWithStreaks, todayData] = await Promise.all([
       getDashboardMetrics(todayDateStr),
@@ -206,12 +253,20 @@ async function refreshDashboard() {
 
   } catch (err) {
     console.error('Error al refrescar el dashboard:', err);
+    todayUnifiedList.innerHTML = `<p style="color:var(--accent-danger);">Error al cargar datos. Intenta refrescar.</p>`;
   }
 }
 
+
 function renderTodayUnifiedList(items) {
   if (!items || items.length === 0) {
-    todayUnifiedList.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">No hay tareas ni hábitos agendados para hoy.</p>';
+    todayUnifiedList.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <div class="empty-state-title">¡Todo libre por hoy!</div>
+        <div class="empty-state-desc">No hay tareas ni hábitos agendados. Usa el botón + Crear para agregar.</div>
+      </div>
+    `;
     return;
   }
 
@@ -257,7 +312,7 @@ async function loadHistoryData() {
   const selectedDate = historyDatePicker.value;
   if (!selectedDate) return;
 
-  historyUnifiedList.innerHTML = '<li style="color:var(--text-muted);">Consultando historial...</li>';
+  historyUnifiedList.innerHTML = skeletonItems(3);
 
   try {
     const historyData = await getHistoryDataForDate(selectedDate);

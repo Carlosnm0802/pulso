@@ -15,10 +15,30 @@ export async function renderManagementView(containerElement, onDataChangedCallba
   if (!containerElement) return;
 
   containerElement.innerHTML = `
-    <div style="text-align:center; padding:2rem; color:var(--text-muted);">
-      Cargando panel de administración...
+    <div class="dashboard-sections">
+      <div class="skeleton-kpi-card" style="min-height:280px; display:flex; flex-direction:column; gap:1rem; padding:1.5rem;">
+        <div class="skeleton skeleton-kpi-label" style="width:40%;"></div>
+        <div class="skeleton skeleton-line-lg"></div>
+        <div class="skeleton skeleton-line-md"></div>
+        <div class="skeleton skeleton-line-lg"></div>
+        <div class="skeleton skeleton-line-md"></div>
+        <div class="skeleton skeleton-line-sm" style="width:55%;"></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:1.5rem;">
+        <div class="skeleton-kpi-card" style="display:flex; flex-direction:column; gap:1rem; padding:1.5rem;">
+          <div class="skeleton skeleton-kpi-label" style="width:40%;"></div>
+          <div class="skeleton skeleton-line-lg"></div>
+          <div class="skeleton skeleton-line-md"></div>
+        </div>
+        <div class="skeleton-kpi-card" style="display:flex; flex-direction:column; gap:1rem; padding:1.5rem;">
+          <div class="skeleton skeleton-kpi-label" style="width:35%;"></div>
+          <div class="skeleton skeleton-line-md"></div>
+          <div class="skeleton skeleton-line-sm" style="width:60%;"></div>
+        </div>
+      </div>
     </div>
   `;
+
 
   try {
     const [habits, tasks, categories] = await Promise.all([
